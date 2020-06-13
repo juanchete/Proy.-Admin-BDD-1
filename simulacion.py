@@ -11,7 +11,37 @@ client.qos = 1
 client.connect(host=host)
 
 #Arreglos de utilidad
-genteConocida = []
+genteConocida = [{
+    'nombre': 'Neji Hyuga',
+    'cedula': '565456',
+    'gende': 'M',
+    'afiliado': True
+}]
+
+prodTienda1 = {
+    'frutas': {
+        'cantidad': 5,
+        'maximo': 44
+    },
+
+    'Curda' : {
+        'cantidad': 5,
+        'maximo': 44
+    }
+}
+
+prodTienda2 = [{
+    'Enlatados': {
+        'cantidad': 5,
+        'maximo': 44
+    }
+
+    'Refrescos' : {
+        'cantidad': 5,
+        'maximo': 44
+    }
+}]
+
 conocidos= 0
 desconocidos =0 
 #Arreglos con data de la BDD
@@ -59,11 +89,14 @@ def main():
 
             if(tienda == 0):
                 persona = entrarTienda(1)
+                while x in len(prodTienda1):
+                    agregarProductos(tienda,prodTienda1,orden)
             else:
                 persona = entrarTienda(2)
+                while x in len(prodTienda2):
+                    agregarProductos(tienda,prodTienda2,orden)
 
-            while estantes[tienda][x] in len(estantes):
-                agregarProductos(tienda,estantes[tienda][x],orden)
+            
             
             pagar(persona, orden)
 
@@ -78,7 +111,7 @@ def pagar (persona, orden) :
 
     total = 0
     while x in len(orden):
-        total + = orden[x][costo]
+        total + = orden[x]
     
     cuenta =  int(np.random.uniform(0,2))
 
@@ -90,8 +123,8 @@ def pagar (persona, orden) :
         cuenta = 'Provincial'
 
     if persona['afiliado'] == True:
-        total = total * 1.1
-        #mandar
+        puntos = total * 1.1
+        #mandar señal de aumentar puntos
 
     payload = {
         'id_persona' = persona,
@@ -104,11 +137,17 @@ def entrarTienda (tienda):
     if(int(np.random.uniform(0,1)) == 0 and genteConocida!=0):
 
         scape = False
+        x=0
         while scape == False:
             persona = random.choice(genteConocida)
-            if persona['afiliado']==True:
+            if x > len(persona):
+                persona = crearPersona()
                 scape = True
-        conocidos += 1
+                desconocidos += 1
+            if persona[0]['afiliado']==True:
+                scape = True
+                conocidos += 1
+        
     else:
         desconocidos += 1
         if int(np.random.uniform(0,1)) == 0 and len(genteNoAfiliada)>=0:
@@ -118,7 +157,7 @@ def entrarTienda (tienda):
                 if persona['afiliado']==False:
                     scape = True
         else:
-            crearPersona()
+            persona = crearPersona()
     return persona
 
 def crearPersona (tienda):
@@ -130,6 +169,7 @@ def crearPersona (tienda):
         "afiliado": False
     }
     genteConocida.append(person)
+    return person 
 
 
 def checkarSiMandoSeñal(tienda,estante):
@@ -145,10 +185,11 @@ def checkarSiMandoSeñal(tienda,estante):
 def agregarProductos (tienda,estante, orden):
     if tienda == 1:
         prod = random.choice(prodTienda1[estante])
+        cantidad = int(np.random.uniform(0,prodTienda1[estante][cantidad])
     else:
         prod = random.choice(prodTienda2[estante])
+        cantidad = int(np.random.uniform(0,prodTienda2[estante][cantidad])
     
-    cantidad = int(np.random.uniform(0,prodTienda2[estante][cantidad])
 
     orden.append(prod,cantidad)
 
