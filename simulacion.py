@@ -11,6 +11,9 @@ client.qos = 1
 client.connect(host=host)
 
 #Arreglos de utilidad
+
+nameList = ['Pedro', 'Lana', 'Albert', 'Yangel','Sasuke', 'Elvis']
+
 genteConocida = [{
     'nombre': 'Neji Hyuga',
     'cedula': '565456',
@@ -20,13 +23,19 @@ genteConocida = [{
 
 prodTienda1 = {
     'frutas': {
-        'cantidad': 5,
+        'manzanas': {
+            'id' = '5',
+            'cantidad' = '6'
+        },
         'maximo': 44
     },
 
     'Curda' : {
-        'cantidad': 5,
-        'maximo': 44
+        'Santa Teresa': {
+            'id' = '686',
+            'cantidad' = '88'
+        },
+        'maximo': 100
     }
 }
 
@@ -163,6 +172,7 @@ def entrarTienda (tienda):
 def crearPersona (tienda):
     cedula = int(np.random.uniform(1000000,30000000)
     gender = random.choice(['M','F'])
+    name = random.choice(nameList)
     payload = {
         "cedula": str(cedula),
         "gender": str(gender),
