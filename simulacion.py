@@ -21,35 +21,47 @@ genteConocida = [{
     'afiliado': True
 }]
 
-prodTienda1 = {
-    'frutas': {
-        'manzanas': {
-            'id' = '5',
-            'cantidad' = '6'
-        },
-        'maximo': 44
-    },
-
-    'Curda' : {
-        'Santa Teresa': {
-            'id' = '686',
-            'cantidad' = '88'
-        },
-        'maximo': 100
+prodTienda1 = [{
+        
+    'departamento' : 'frutas',
+    'productos' : [{
+            'id' : '5445',
+            'producto' : 'pizza',
+            'cantidad' : '55'
+            }],
+    'capacidad' : '66'
+    },{
+        'departamento' : 'alcohol',
+    'productos' : [{
+            'id' : '6868',
+            'producto' : 'Santa Teresa',
+            'cantidad' : '22'
+            }],
+    'capacidad' : '42'
     }
-}
+    ]
 
 prodTienda2 = [{
-    'Enlatados': {
-        'cantidad': 5,
-        'maximo': 44
+        
+    'departamento' : 'Enlatados',
+    'productos' : [{
+            'id' : '56645',
+            'producto' : 'atun',
+            'cantidad' : '55'
+            }],
+    'cantidad_actual' : '60',
+    'capacidad' : '66'
+    },{
+        'departamento' : 'alcohol',
+    'productos' : [{
+            'id' : '6868',
+            'producto' : 'Santa Teresa',
+            'cantidad' : '22'
+            }],
+    'capacidad' : '42'
     }
+    ]
 
-    'Refrescos' : {
-        'cantidad': 5,
-        'maximo': 44
-    }
-}]
 
 conocidos= 0
 desconocidos =0 
@@ -99,11 +111,11 @@ def main():
             if(tienda == 0):
                 persona = entrarTienda(1)
                 while x in len(prodTienda1):
-                    agregarProductos(tienda,prodTienda1,orden)
+                    agregarProductos(tienda,prodTienda1,orden,estantes)
             else:
                 persona = entrarTienda(2)
                 while x in len(prodTienda2):
-                    agregarProductos(tienda,prodTienda2,orden)
+                    agregarProductos(tienda,prodTienda2,orden,estantes)
 
             
             
@@ -120,7 +132,7 @@ def pagar (persona, orden) :
 
     total = 0
     while x in len(orden):
-        total + = orden[x]
+        total += orden[x]
     
     cuenta =  int(np.random.uniform(0,2))
 
@@ -148,23 +160,20 @@ def entrarTienda (tienda):
         scape = False
         x=0
         while scape == False:
-            persona = random.choice(genteConocida)
-            if x > len(persona):
-                persona = crearPersona()
-                scape = True
-                desconocidos += 1
-            if persona[0]['afiliado']==True:
-                scape = True
-                conocidos += 1
+            persona = random.choice([a for a in genteConocida if a['afiliado'] ==True])
+            if len(persona) > 0:
+                return persona
+            else:
+                 persona = crearPersona()
+                 desconocidos += 1
+            
         
     else:
         desconocidos += 1
-        if int(np.random.uniform(0,1)) == 0 and len(genteNoAfiliada)>=0:
-            scape = False
-            while scape == False:
-                persona = random.choice(genteConocida)
-                if persona['afiliado']==False:
-                    scape = True
+        persona = random.choice([a for a in genteConocida if a['afiliado'] ==False])
+        if int(np.random.uniform(0,1)) == 0 and len(persona)>=0:
+
+            pass
         else:
             persona = crearPersona()
     return persona
@@ -183,25 +192,41 @@ def crearPersona (tienda):
 
 
 def checkarSiMandoSeñal(tienda,estante):
+
+    if tienda = 1:
+
     
-    if tienda['estante']['maximo']*.2 <= tienda['estante']['cantidad']
-        alerta = {
-            'rellenar': 'El estante numero ' + str(estante)+ 'de la tienda' +  str(tienda) + 'tiene que ser rellenado'
-        }
-        client.publish('plaza/tienda/'+str(tienda),json.dumps(alertaPersonal),qos=1)
-        tienda['estante']['cantidad'] = tienda['estante']['maximo']
+        if prodTienda1[estantes]['capacidad']*.2 <= tienda['estante']['cantidad']
+            alerta = {
+                'rellenar': 'El estante numero ' + str(estante)+ 'de la tienda' +  str(tienda) + 'tiene que ser rellenado'
+            }
+            client.publish('plaza/tienda/'+str(tienda),json.dumps(alertaPersonal),qos=1)
+            tienda['estante']['cantidad'] = tienda['estante']['maximo']
 
 
-def agregarProductos (tienda,estante, orden):
+def agregarProductos (tienda,estante, orden, estantes):
     if tienda == 1:
-        prod = random.choice(prodTienda1[estante])
-        cantidad = int(np.random.uniform(0,prodTienda1[estante][cantidad])
+        prod = random.choice(prodTienda1[estantes]['productos'])
+        id_prod = prod['id']
+        cantidad = int(np.random.uniform(0,int (prod['cantidad'])))
+        prodTienda1[estantes]['productos']['cantidad'] -= cantidad
+        prodTienda1[estantes]['cantidad_actual'] -= cantidad
     else:
-        prod = random.choice(prodTienda2[estante])
-        cantidad = int(np.random.uniform(0,prodTienda2[estante][cantidad])
+        prod = random.choice(prodTienda2[estantes]['productos'])
+        id_prod = prod['id']
+        cantidad = int(np.random.uniform(0,int (prod['cantidad'])))
+        prodTienda2[estantes]['productos']['cantidad'] -= cantidad
+        prodTienda2[estantes]['cantidad_actual'] -= cantidad
+
+    producto = {
+
+        'id' = id_prod,
+        'cantidad' = cantidad
+
+    }
     
 
-    orden.append(prod,cantidad)
+    orden.append(producto)
 
     checkarSiMandoSeñal(tienda,estante)
 
