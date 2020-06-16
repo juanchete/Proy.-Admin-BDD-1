@@ -72,6 +72,7 @@ insert into Cliente (ID_Cliente, nombre, apellido, cumpleaños) values (27937999
 create table Afiliado (
 	ID_Cliente varchar (8),
 	puntos numeric (15,0),
+    fecha date,
     primary key (ID_Cliente),
 	foreign key (ID_Cliente) references Cliente
 		on delete cascade
@@ -262,11 +263,17 @@ create table Compra (
         on delete cascade
 );
 
-insert into Compra (ID_Compra, ID_Cliente, fecha, ID_Product, cant, ID_Sucursal) values (6001, 25021709, '7/9/2019', 3001, 3, 1000);
-insert into Compra (ID_Compra, ID_Cliente, fecha, ID_Product, cant, ID_Sucursal) values (6001, 25021709, '10/17/2019', 3004, 2, 1000);
-insert into Compra (ID_Compra, ID_Cliente, fecha, ID_Product, cant, ID_Sucursal) values (6001, 25021709, '4/20/2019', 3010, 3, 1000);
-insert into Compra (ID_Compra, ID_Cliente, fecha, ID_Product, cant, ID_Sucursal) values (6001, 25021709, '2/4/2020', 3006, 1, 1000);
-insert into Compra (ID_Compra, ID_Cliente, fecha, ID_Product, cant, ID_Sucursal) values (6001, 25021709, '8/21/2019', 3015, 4, 1000);
+insert into Compra (ID_Compra, ID_Cliente, fecha, ID_Product, cant, ID_Sucursal) values (6001, 25021709, '10/24/2019', 3001, 3, 1000);
+insert into Compra (ID_Compra, ID_Cliente, fecha, ID_Product, cant, ID_Sucursal) values (6001, 25021709, '10/24/2019', 3004, 2, 1000);
+insert into Compra (ID_Compra, ID_Cliente, fecha, ID_Product, cant, ID_Sucursal) values (6001, 25021709, '10/24/2019', 3010, 3, 1000);
+insert into Compra (ID_Compra, ID_Cliente, fecha, ID_Product, cant, ID_Sucursal) values (6001, 25021709, '10/24/2019', 3006, 1, 1000);
+insert into Compra (ID_Compra, ID_Cliente, fecha, ID_Product, cant, ID_Sucursal) values (6001, 25021709, '10/24/2019', 3015, 4, 1000);
+
+insert into Compra (ID_Compra, ID_Cliente, fecha, ID_Product, cant, ID_Sucursal) values (6002, 25399720, '8/30/2019', 3002, 2, 1000);
+insert into Compra (ID_Compra, ID_Cliente, fecha, ID_Product, cant, ID_Sucursal) values (6002, 25399720, '8/30/2019', 3006, 2, 1000);
+insert into Compra (ID_Compra, ID_Cliente, fecha, ID_Product, cant, ID_Sucursal) values (6002, 25399720, '8/30/2019', 3010, 1, 1000);
+insert into Compra (ID_Compra, ID_Cliente, fecha, ID_Product, cant, ID_Sucursal) values (6002, 25399720, '8/30/2019', 3003, 1, 1000);
+insert into Compra (ID_Compra, ID_Cliente, fecha, ID_Product, cant, ID_Sucursal) values (6002, 25399720, '8/30/2019', 3009, 2, 1000);
 
 create table Factura (
 	ID_Factura varchar (4),
@@ -277,13 +284,64 @@ create table Factura (
     primary key (ID_Factura)
 );
 
-insert into Factura (ID_Factura, fecha, ID_Banco, ID_Compra) values (4001, '7/9/2019', 2, 6001);
+insert into Factura (ID_Factura, fecha, ID_Banco, ID_Compra) values (4001, '10/24/2019', 2, 6001);
+insert into Factura (ID_Factura, fecha, ID_Banco, ID_Compra) values (4002, '8/30/2019', 1, 6001);
 
 create table Visita (
 	ID_Cliente varchar (4),
-    hora,
     fecha date,
-    ID_Banco varchar (4),
-    ID_Compra varchar (4),
-    primary key (ID_Factura)
+    ID_Sucursal varchar (4),
+    primary key (ID_Cliente, fecha, ID_Sucursal)
 );
+
+insert into Visita (ID_Cliente, fecha, ID_Sucursal) values (25021709, '10/24/2019', 0);
+insert into Visita (ID_Cliente, fecha, ID_Sucursal) values (25399720, '9/16/2019', 1);
+insert into Visita (ID_Cliente, fecha, ID_Sucursal) values (26044929, '9/24/2019', 1);
+insert into Visita (ID_Cliente, fecha, ID_Sucursal) values (25399720, '8/30/2019', 0);
+insert into Visita (ID_Cliente, fecha, ID_Sucursal) values (26118740, '3/16/2020', 0);
+insert into Visita (ID_Cliente, fecha, ID_Sucursal) values (25619359, '9/24/2019', 0);
+insert into Visita (ID_Cliente, fecha, ID_Sucursal) values (24997875, '4/23/2019', 1);
+insert into Visita (ID_Cliente, fecha, ID_Sucursal) values (25021709, '11/5/2019', 0);
+insert into Visita (ID_Cliente, fecha, ID_Sucursal) values (26118740, '12/1/2019', 0);
+insert into Visita (ID_Cliente, fecha, ID_Sucursal) values (24776966, '1/2/2019', 1);
+insert into Visita (ID_Cliente, fecha, ID_Sucursal) values (26044929, '9/10/2018', 1);
+insert into Visita (ID_Cliente, fecha, ID_Sucursal) values (27205181, '5/9/2019', 0);
+insert into Visita (ID_Cliente, fecha, ID_Sucursal) values (24776966, '3/17/2020', 1);
+insert into Visita (ID_Cliente, fecha, ID_Sucursal) values (25619359, '4/8/2020', 0);
+insert into Visita (ID_Cliente, fecha, ID_Sucursal) values (27651832, '1/2/2019', 1);
+insert into Visita (ID_Cliente, fecha, ID_Sucursal) values (24997875, '11/3/2019', 1);
+insert into Visita (ID_Cliente, fecha, ID_Sucursal) values (27205181, '11/18/2019', 0);
+insert into Visita (ID_Cliente, fecha, ID_Sucursal) values (27408935, '7/12/2018', 0);
+insert into Visita (ID_Cliente, fecha, ID_Sucursal) values (24846813, '11/23/2019', 0);
+insert into Visita (ID_Cliente, fecha, ID_Sucursal) values (25300265, '7/7/2019', 1);
+insert into Visita (ID_Cliente, fecha, ID_Sucursal) values (25259010, '5/29/2020', 1);
+insert into Visita (ID_Cliente, fecha, ID_Sucursal) values (27408935, '5/24/2020', 1);
+insert into Visita (ID_Cliente, fecha, ID_Sucursal) values (24846813, '7/23/2018', 0);
+insert into Visita (ID_Cliente, fecha, ID_Sucursal) values (27669949, '5/7/2020', 1);
+insert into Visita (ID_Cliente, fecha, ID_Sucursal) values (27408935, '5/20/2019', 0);
+insert into Visita (ID_Cliente, fecha, ID_Sucursal) values (26066636, '11/1/2019', 1);
+insert into Visita (ID_Cliente, fecha, ID_Sucursal) values (27651832, '6/28/2019', 1);
+insert into Visita (ID_Cliente, fecha, ID_Sucursal) values (24714462, '11/15/2018', 1);
+insert into Visita (ID_Cliente, fecha, ID_Sucursal) values (26566783, '3/18/2020', 0);
+insert into Visita (ID_Cliente, fecha, ID_Sucursal) values (24714462, '8/8/2019', 0);
+insert into Visita (ID_Cliente, fecha, ID_Sucursal) values (26566783, '8/28/2019', 1);
+insert into Visita (ID_Cliente, fecha, ID_Sucursal) values (24807501, '11/9/2019', 1);
+insert into Visita (ID_Cliente, fecha, ID_Sucursal) values (25300265, '2/14/2020', 1);
+insert into Visita (ID_Cliente, fecha, ID_Sucursal) values (25259010, '3/4/2019', 1);
+insert into Visita (ID_Cliente, fecha, ID_Sucursal) values (27669949, '1/18/2020', 1);
+insert into Visita (ID_Cliente, fecha, ID_Sucursal) values (27669949, '8/23/2019', 0);
+insert into Visita (ID_Cliente, fecha, ID_Sucursal) values (24714462, '5/5/2020', 1);
+insert into Visita (ID_Cliente, fecha, ID_Sucursal) values (24807501, '2/12/2019', 1);
+insert into Visita (ID_Cliente, fecha, ID_Sucursal) values (25259010, '7/20/2019', 0);
+insert into Visita (ID_Cliente, fecha, ID_Sucursal) values (26566783, '9/28/2018', 0);
+insert into Visita (ID_Cliente, fecha, ID_Sucursal) values (25515100, '7/21/2019', 1);
+insert into Visita (ID_Cliente, fecha, ID_Sucursal) values (24077324, '8/20/2019', 1);
+insert into Visita (ID_Cliente, fecha, ID_Sucursal) values (24807501, '12/17/2018', 0);
+insert into Visita (ID_Cliente, fecha, ID_Sucursal) values (25515100, '1/3/2020', 0);
+insert into Visita (ID_Cliente, fecha, ID_Sucursal) values (25515100, '12/2/2019', 0);
+insert into Visita (ID_Cliente, fecha, ID_Sucursal) values (24077324, '5/13/2020', 1);
+insert into Visita (ID_Cliente, fecha, ID_Sucursal) values (24077324, '2/4/2019', 1);
+insert into Visita (ID_Cliente, fecha, ID_Sucursal) values (27937999, '7/27/2018', 0);
+insert into Visita (ID_Cliente, fecha, ID_Sucursal) values (27937999, '8/18/2018', 1);
+insert into Visita (ID_Cliente, fecha, ID_Sucursal) values (27937999, '3/23/2019', 1);
+
