@@ -5,6 +5,8 @@ import numpy as np
 import datetime
 import json
 import random
+import psycopg2
+import pandas as pd
 
 host = "broker.hivemq.com"
 client = paho.mqtt.client.Client("Juancholo", False)
@@ -15,66 +17,17 @@ client.connect(host=host)
 
 nameList = ['Pedro', 'Lana', 'Albert', 'Yangel','Sasuke', 'Elvis']
 
-genteConocida = [{
-    'nombre': 'Neji Hyuga',
-    'cedula': '565456',
-    'gende': 'M',
-    'afiliado': True
-}]
 
-prodTienda1 = [{
-        
-    'departamento' : 'frutas',
-    'productos' : [{
-            'id' : '5445',
-            'producto' : 'pizza',
-            'cantidad' : '55',
-            'restock' : '60'
-            }],
-    'capacidad' : '66'
-    },{
-        'departamento' : 'alcohol',
-    'productos' : [{
-            'id' : '6868',
-            'producto' : 'Santa Teresa',
-            'cantidad' : '22',
-            'restock' : '30'
-            }],
-    'capacidad' : '42'
-    }
-    ]
-
-prodTienda2 = [{
-        
-    'departamento' : 'Enlatados',
-    'productos' : [{
-            'id' : '56645',
-            'producto' : 'atun',
-            'cantidad_actual' : '55',
-            'restock' : '55'
-            }],
-    'cantidad_actual' : '60',
-    'capacidad' : '66'
-    },{
-        'departamento' : 'alcohol',
-    'productos' : [{
-            'id' : '6868',
-            'producto' : 'Santa Teresa',
-            'cantidad' : '22',
-            'restock' : '30'
-            }],
-    'capacidad' : '42'
-    }
-    ]
+#Arreglos con data de la BDD
+genteConocida = []
+prodTienda1 = []
+prodTienda2 = []
 
 
 conocidos= 0
 desconocidos =0 
 #Arreglos con data de la BDD
-idProd = [] #Aca traigo el id, cantidad de productos, precio en cada tienda
-prodTienda = []
-prodTienda1 = []
-prodTienda2 = []
+
 
 meanAlimentosEnlatados = 2
 stdAlimentosEnlatados = 1
@@ -103,6 +56,10 @@ def main():
     client.qos = 1
     client.connect(host=host)
 
+    myConnection = psycopg2.connect(host = 'ruby.db.elephantsql.com',
+                                user= 'uicdhpnp', password ='Kfp61NZwnYQVCSDf-zl7Jae836R2u0Fn',
+                                dbname= 'uicdhpnp')
+
     cantHoras = 24
     hora =0
     horaBase = datetime.datetime.now().replace(hour=8, minute=0, second=0)
@@ -110,68 +67,13 @@ def main():
 
     nameList = ['Pedro', 'Lana', 'Albert', 'Yangel','Sasuke', 'Elvis']
 
-    genteConocida = [{
-        'nombre': 'Neji Hyuga',
-        'cedula': '565456',
-        'gende': 'M',
-        'afiliado': True
-    }]
+    getClientes(genteConocida,myConnection)
 
-    prodTienda1 = [{
-            
-        'departamento' : 'frutas',
-        'productos' : [{
-                'id' : '5445',
-                'producto' : 'pizza',
-                'precio': '6',
-                'cantidad' : '55',
-                'restock' : '60'
-                }],
-        'cantidad_actual' : '55',
-        'capacidad' : '66'
-        },{
-            'departamento' : 'alcohol',
-        'productos' : [{
-                'id' : '6868',
-                'producto' : 'Santa Teresa',
-                'precio': '6',
-                'cantidad' : '22',
-                'restock' : '30'
-                }],
-        'cantidad_actual' : '22',
-        'capacidad' : '42'
-        }
-        ]
-
-    prodTienda2 = [{
-            
-        'departamento' : 'Enlatados',
-        'productos' : [{
-                'id' : '56645',
-                'producto' : 'atun',
-                'precio': '6',
-                'cantidad' : '55',
-                'restock' : '55'
-                }],
-        'cantidad_actual' : '60',
-        'capacidad' : '66'
-        },{
-            'departamento' : 'alcohol',
-        'productos' : [{
-                'id' : '686558',
-                'producto' : 'Santa Teresa',
-                'precio': '6',
-                'cantidad' : '22',
-                'restock' : '30'
-                }],
-                'cantidad_actual' : '22',
-        'capacidad' : '42'
-        }
-        ]
+    getProductos(prodTienda1,prodTienda2,myConnection)
 
 
-    conocidos == 0
-    desconocidos ==0 
+    conocidos = 0
+    desconocidos =0 
     #Arreglos con data de la BDD
 
 
@@ -210,18 +112,18 @@ def main():
             tienda = int(np.random.uniform(0,1))
 
             if(tienda == 0):
-                persona = entrarTienda(1)
+                persona = entrarTienda(1,conocidos,desconocidos,horaBase)
                 print('Entro a la teinda numero 1')
                 x=0
                 while x < len(prodTienda1):
                     agregarProductos(tienda,prodTienda1,orden,x)
                     x+=1
             else:
-                persona = entrarTienda(2)
+                persona = entrarTienda(2,conocidos,desconocidos,horaBase)
                 print('Entro a la teinda numero 1')
                 x=0
                 while x < len(prodTienda2):
-                    agregarProductos(tienda,prodTienda2,orden,x)
+                    agregarProductos(tienda,prodTienda2,orden,x,horaBase)
                     x+=1
             pagar(persona, orden)
 
@@ -267,7 +169,7 @@ def pagar (persona, orden) :
 
     # }
 
-def entrarTienda (tienda):
+def entrarTienda (tienda,conocidos,desconocidos,hora):
     if(int(np.random.uniform(0,2)) == 0 and genteConocida!=0):
 
         
@@ -277,22 +179,38 @@ def entrarTienda (tienda):
         persona = random.choice([a for a in genteConocida if a['afiliado'] ==True])
         if len(persona) > 0:
             print('Se escogera una persona conocida')
+            conocidos += 1
             print(persona)
             return persona
         else:
             print('Se creara una persona')
             persona = crearPersona()
-            # desconocidos += 1
+            desconocidos += 1
             
         
     else:
-        # desconocidos += 1
+        desconocidos += 1
         persona = [a for a in genteConocida if a['afiliado'] ==False]
         if int(np.random.uniform(0,1)) == 0 and len(persona)>0:
             persona = random.choice(persona)
             
         else:
             persona = crearPersona()
+    
+    
+    
+    payload = {
+
+        'id_cliente' : str(persona['id']),
+        'fecha' : hora.date(),
+        'id_sucursal': tienda
+
+
+
+    }
+
+    camaraSend(payload,myConnection)
+
     return persona
 
 def crearPersona ():
@@ -311,14 +229,18 @@ def crearPersona ():
     return payload 
 
 
-def checkarSiMandoSeñal(produccion,tienda,estante):
+def checkarSiMandoSeñal(produccion,tienda,estante,hora):
 
-    print(estante)
+    
     popo = int(produccion[estante]['capacidad'])*0.2
     if popo >= int(produccion[estante]['cantidad_actual']):
         alerta = {
-            'rellenar': 'El estante numero ' + str(estante)+ 'de la tienda' +  str(tienda) + 'tiene que ser rellenado'
+            'rellenar': 'El estante numero ' + str(estante)+ 'de la tienda' +  str(tienda) + 'tiene que ser rellenado',
+            'estante': estante,
+            'sucursal': tienda,
+            'fecha': hora.date()
         }
+
         client.publish('plaza/tienda/'+str(tienda),json.dumps(alerta),qos=1)
         produccion[estante]['cantidad_actual'] = produccion[estante]['capacidad']
             
@@ -333,7 +255,7 @@ def checkarSiMandoSeñal(produccion,tienda,estante):
 
 
 
-def agregarProductos (tienda,produccion, orden, estantes):
+def agregarProductos (tienda,produccion, orden, estantes,hora):
     if tienda == 1:
         prod = random.choice(produccion[estantes]['productos'])
         indice = produccion[estantes]['productos'].index(prod)
@@ -363,9 +285,121 @@ def agregarProductos (tienda,produccion, orden, estantes):
     
 
     orden.append(producto)
-    print(estantes)
     checkarSiMandoSeñal(produccion,tienda,estantes)
     return orden
+
+def getClientes(lista,myConnection ):
+
+    query = """SELECT id_cliente, nombre, apellido, CASE WHEN id_cliente not in (Select id_cliente from afiliado) 
+                                                          THEN False ELSE True END afiliado FROM cliente"""
+    df = pd.read_sql_query(query, myConnection)
+    for index, row in df.iterrows():
+        producto = {
+
+        'id' : row["id_cliente"],
+        'cantidad' : row["nombre"],
+        'precio' : row["apellido"],
+        'afiliado': row["afiliado"]
+        } 
+    
+        lista.append(producto)
+    print(lista[0])
+
+def getProductos(prodTienda1,prodTienda2,myConnection):
+    query = """with aux (id, cheat,value ) as (SELECT  id_producto, MAX(id_costo_producto) ,MAX(fecha) FROM costo_producto group by id_producto order by id_producto)
+                SELECT e.id_estante, e.max_capacidad, e.id_sucursal, p.id_producto, p.nombre, i.promedio_inventario, c.precio from estante e
+                                INNER JOIN inventario i on e.id_estante= i.id_estante 
+                                INNER JOIN producto p on i.id_producto = p.id_producto
+                                INNER JOIN costo_producto c on p.id_producto = c.id_producto
+                                INNER JOIN aux on c.id_costo_producto= aux.cheat
+                order by id_estante asc"""
+
+    df = pd.read_sql_query(query, myConnection)
+    prodTienda1 = []
+    prodTienda2 = []
+    for index, row in df.iterrows():
+    
+    
+    
+        if row["id_sucursal"] == '1001':
+        
+        
+            pepe = next((i for i, item in enumerate(prodTienda1) if item["estante"] == row["id_estante"]), None)
+            if pepe == None:
+
+                temp = {
+
+                'estante' : row["id_estante"],
+                'productos' : [{
+                        'id' : row["id_producto"],
+                        'producto' : row["nombre"],
+                        'precio': row["precio"],
+                        'cantidad' : row["promedio_inventario"],
+                        'restock' : row["promedio_inventario"]
+                        }],
+                'cantidad_actual' : row["id_estante"],
+                'capacidad' : row["id_estante"]
+                }
+                
+                prodTienda1.append(temp)
+
+            else:
+                
+                temp = {
+                        'id' : row["id_producto"],
+                        'producto' : row["nombre"],
+                        'precio': row["precio"],
+                        'cantidad' : row["promedio_inventario"],
+                        'restock' : row["promedio_inventario"]
+                        }
+                
+                prodTienda1[pepe]['productos'].append(temp)
+                
+        else:
+            
+            pepe = next((i for i, item in enumerate(prodTienda2) if item["estante"] == row["id_estante"]), None)
+            if pepe == None:
+
+                temp = {
+
+                'estante' : row["id_estante"],
+                'productos' : [{
+                        'id' : row["id_producto"],
+                        'producto' : row["nombre"],
+                        'precio': row["precio"],
+                        'cantidad' : row["promedio_inventario"],
+                        'restock' : row["promedio_inventario"]
+                        }],
+                'cantidad_actual' : row["id_estante"],
+                'capacidad' : row["id_estante"]
+                }
+                
+                prodTienda2.append(temp)
+
+            else:
+                
+                temp = {
+                        'id' : row["id_producto"],
+                        'producto' : row["nombre"],
+                        'precio': row["precio"],
+                        'cantidad' : row["promedio_inventario"],
+                        'restock' : row["promedio_inventario"]
+                        }
+                
+                prodTienda2[pepe]['productos'].append(temp)
+        
+
+    print( prodTienda1)
+            
+    print( '--------------------------------------------------------------')
+            
+    print( prodTienda2)
+
+def camaraSend(a,myConnection):
+    cur = myConnection.cursor()
+    cur.execute("INSERT INTO visita (ID_Cliente, fecha, ID_Sucursal) VALUES (%s, %s, %s);",
+                (a["id_cliente"],a["fecha"],a["id_sucursal"]))
+    myConnection.commit()
 
 if __name__ == "__main__":
     main()
