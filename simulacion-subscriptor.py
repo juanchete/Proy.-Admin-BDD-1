@@ -17,9 +17,13 @@ def main():
 
     client.on_connect = on_connect
 
-    client.message_callback_add('plaza/tienda/1', on_message_postgre)
+    client.message_callback_add('plaza/tienda/1/almacen', on_message_almacen)
 
-    client.message_callback_add('plaza/tienda/2', on_message)
+    client.message_callback_add('plaza/tienda/2/almacen', on_message_almacen)
+
+    client.message_callback_add('plaza/tienda/1/temperatura', on_message_postgre)
+
+    client.message_callback_add('plaza/tienda/2/temperatura', on_message_postgre)
 
     client.connect(host=host) 
 
@@ -37,19 +41,34 @@ def on_message(client, userdata, message):
     print(message.qos)   
     print('------------------------------')     
     
-def on_message_postgre(client, userdata, message):   
+def on_message_almacen(client, userdata, message):   
     a = json.loads(message.payload)
     print(a) 
     print(message.qos)   
-    doQuery(a)
+    doQueryAlmacen(a)
     print('------------------------------')  
 
 
 
-def doQuery(a):
+def doQueryAlmacen(a):
     cur = myConnection.cursor()
     cur.execute("INSERT INTO rotacion (fecha, estante, sucursal) VALUES (%s, %s, %s);",
                 (a["fecha"],a["estante"],a["sucursal"]))
+    myConnection.commit()
+
+def on_message_temperatura(client, userdata, message):   
+    a = json.loads(message.payload)
+    print(a) 
+    print(message.qos)   
+    doQueryTemperatura(a)
+    print('------------------------------')  
+
+
+
+def doQueryTemperatura(a):
+    cur = myConnection.cursor()
+    cur.execute("INSERT INTO historico_temperatura  (fecha, estante, sucursal) VALUES (%s, %s, %s);",
+                (a["fecha"],a["temperatura "],a["ID_Sucursal "]))
     myConnection.commit()
 
 if __name__ == "__main__":

@@ -69,9 +69,9 @@ def main():
 
     getClientes(genteConocida,myConnection)
 
-    getProductos(prodTienda1,prodTienda2,myConnection)
+    prodTienda1,prodTienda2 = getProductos(myConnection)
 
-
+    print(len(prodTienda1))
     conocidos = 0
     desconocidos =0 
     #Arreglos con data de la BDD
@@ -88,11 +88,14 @@ def main():
     meanSnacks = 6
     stdSnacks = 4
 
-    capacidadEstanteEnlatados = 50
-    capacidadEstanteFrescos = 30
-    capacidadEstanteNoPerecederos = 90
-    capacidadEstanteAlcohol = 100
-    capacidadEstanteSnacks = 50
+    capacidadTienda1 = [] #30 personas
+    capacidadTienda2 = [] #35 personas
+    colaTienda1 = []
+    colaTienda2 = []
+
+    meanTemperatura = 28
+    stdTemperatura = 2
+
 
     print('Comienza el frao')
 
@@ -103,31 +106,83 @@ def main():
         #Esto es mientras el Plaza este abierto
         print(horaBase)
         print(horaBase.hour)
-        while(horaBase.hour < 22):
+
+        cuantosEntraran = int(np.random.uniform(0,len(genteConocida)))
+        
+
+        x = 0
+
+        candidataEntrar = []
+
+        while x < cuantosEntraran:
+
+            if int(np.random.uniform(0,4)) < 4:
+
+                entraran = random.choice(genteConocida)
+                candidataEntrar.append(entraran)
+            else:
+
+                persona = crearPersona()
+
+                candidataEntrar.append(persona)
+                
+            x += 1
+        
+
+        
+
+        for x in candidataEntrar:
+
+            distribuir(x,capacidadTienda1,colaTienda1,capacidadTienda2,colaTienda2)
+
+        while(len(capacidadTienda1)!=0 and len(capacidadTienda2)!=0):
+
+            temperatura = np.random.normal(meanTemperatura, stdTemperatura)
+
 
             print('Dia numero ' + str(days) + 'Hora numero '  +str(horaBase.hour) )
             
+
             orden = []
 
-            tienda = int(np.random.uniform(0,1))
+            tienda = int(np.random.uniform(0,2)+1)
 
-            if(tienda == 0):
-                persona = entrarTienda(1,conocidos,desconocidos,horaBase)
+            checkarTemperatura(temperatura,tienda,horaBase)
+
+            if(tienda == 1):
+                persona = entrarTienda(1,capacidadTienda1,conocidos,desconocidos,horaBase,myConnection)
                 print('Entro a la teinda numero 1')
                 x=0
                 while x < len(prodTienda1):
-                    agregarProductos(tienda,prodTienda1,orden,x)
+                    agregarProductos(tienda,prodTienda1,orden,x,horaBase)
                     x+=1
+                pagar(persona, orden)
+                capacidadTienda1.remove(persona)
+                if len(colaTienda1)!=0:
+                    entraran = random.choice(colaTienda1)
+                    colaTienda1.remove(entraran)
+                    capacidadTienda1.append(entraran)
+
             else:
-                persona = entrarTienda(2,conocidos,desconocidos,horaBase)
-                print('Entro a la teinda numero 1')
+                persona = entrarTienda(2,capacidadTienda2,conocidos,desconocidos,horaBase,myConnection)
+                print('Entro a la teinda numero 2')
                 x=0
                 while x < len(prodTienda2):
+                    print('Entro a esta etapa')
                     agregarProductos(tienda,prodTienda2,orden,x,horaBase)
                     x+=1
-            pagar(persona, orden)
+                pagar(persona, orden)
+                capacidadTienda2.remove(persona)
+                if len(colaTienda2)!=0:
+                    entraran = random.choice(colaTienda2)
+                    colaTienda2.remove(entraran)
+                    capacidadTienda2.append(entraran)
+            
 
             horaBase = horaBase + datetime.timedelta(hours=1)
+
+
+
             time.sleep(0.2)
             
         horaBase = datetime.datetime.now().replace(hour=8, minute=0, second=0)
@@ -137,6 +192,53 @@ def main():
         
         days = days - 1
     #Variables de la BDD
+
+def checkarTemperatura(temperatura,tienda,hora):
+    if temperatura< 24 or temperatura>31:
+
+        mensaje = temperatura - 28
+
+        temperatura = str(temperatura) + '°C'
+
+        alerta = {
+            'rellenar': 'La temperatura esta ' + str(mensaje)+ '°C sobre el deseado, ajustelo en la tienda ' +  str(tienda),
+            'temperatura': temperatura,
+            'ID_Sucursal ': tienda,
+            'fecha': hora.date()
+        }
+
+        client.publish('plaza/tienda/'+str(tienda)+'/temperatura',json.dumps(alerta),qos=1)
+        
+
+
+
+def distribuir (persona,capacidadTienda1,colaTienda1,capacidadTienda2,colaTienda2) :
+
+
+    if(int(np.random.uniform(0,2)) == 1):
+
+        if len(capacidadTienda1) < 30:
+
+            capacidadTienda1.append(persona)
+        
+        else:
+
+            colaTienda1.append(persona)
+
+    else:
+
+        if len(capacidadTienda2) < 35:
+
+            capacidadTienda2.append(persona)
+        
+        else:
+
+            colaTienda2.append(persona)
+
+
+
+
+
 
 def pagar (persona, orden) :
     
@@ -169,33 +271,40 @@ def pagar (persona, orden) :
 
     # }
 
-def entrarTienda (tienda,conocidos,desconocidos,hora):
-    if(int(np.random.uniform(0,2)) == 0 and genteConocida!=0):
+def entrarTienda (tienda,lista,conocidos,desconocidos,hora,myConnection):
 
+    checkAfiliado = random.choice([a for a in lista if a['afiliado'] ==True])
+    checkNoAfiliado = [a for a in lista if a['afiliado'] ==False]
+
+
+    stop = False
+
+    while stop == False:
+
+        opcion = int(np.random.uniform(0,2))
+
+        if(opcion == 0 and len(checkAfiliado)>0):
+
+            
         
-       
-     
         
-        persona = random.choice([a for a in genteConocida if a['afiliado'] ==True])
-        if len(persona) > 0:
-            print('Se escogera una persona conocida')
-            conocidos += 1
-            print(persona)
-            return persona
-        else:
-            print('Se creara una persona')
-            persona = crearPersona()
+            
+            persona = random.choice([a for a in lista if a['afiliado'] ==True])
+            if len(persona) > 0:
+                print('Se escogera una persona conocida')
+                conocidos += 1
+                print(persona)
+                stop = True
+                
+        elif(opcion == 1 and len(checkNoAfiliado)>0):
             desconocidos += 1
-            
-        
-    else:
-        desconocidos += 1
-        persona = [a for a in genteConocida if a['afiliado'] ==False]
-        if int(np.random.uniform(0,1)) == 0 and len(persona)>0:
-            persona = random.choice(persona)
-            
-        else:
-            persona = crearPersona()
+            persona = [a for a in lista if a['afiliado'] ==False]
+            if int(np.random.uniform(0,1)) == 0 and len(persona)>0:
+                persona = random.choice(persona)
+                print('Se escogera una persona desconocida')
+                print(persona)
+                stop = True
+
     
     
     
@@ -241,7 +350,7 @@ def checkarSiMandoSeñal(produccion,tienda,estante,hora):
             'fecha': hora.date()
         }
 
-        client.publish('plaza/tienda/'+str(tienda),json.dumps(alerta),qos=1)
+        client.publish('plaza/tienda/'+str(tienda)+'/almacen',json.dumps(alerta),qos=1)
         produccion[estante]['cantidad_actual'] = produccion[estante]['capacidad']
             
         x=0
@@ -249,11 +358,6 @@ def checkarSiMandoSeñal(produccion,tienda,estante,hora):
             produccion[estante]['productos'][x]['cantidad'] = produccion[estante]['productos'][x]['restock']
             x += 1
             
-    
-
-
-
-
 
 def agregarProductos (tienda,produccion, orden, estantes,hora):
     if tienda == 1:
@@ -285,7 +389,7 @@ def agregarProductos (tienda,produccion, orden, estantes,hora):
     
 
     orden.append(producto)
-    checkarSiMandoSeñal(produccion,tienda,estantes)
+    checkarSiMandoSeñal(produccion,tienda,estantes,hora)
     return orden
 
 def getClientes(lista,myConnection ):
@@ -297,15 +401,19 @@ def getClientes(lista,myConnection ):
         producto = {
 
         'id' : row["id_cliente"],
-        'cantidad' : row["nombre"],
-        'precio' : row["apellido"],
+        'nombre' : row["nombre"],
+        'apellido' : row["apellido"],
         'afiliado': row["afiliado"]
         } 
     
         lista.append(producto)
-    print(lista[0])
+    
 
-def getProductos(prodTienda1,prodTienda2,myConnection):
+def getProductos(myConnection):
+
+    prodTienda1 = []
+    prodTienda2 = []
+
     query = """with aux (id, cheat,value ) as (SELECT  id_producto, MAX(id_costo_producto) ,MAX(fecha) FROM costo_producto group by id_producto order by id_producto)
                 SELECT e.id_estante, e.max_capacidad, e.id_sucursal, p.id_producto, p.nombre, i.promedio_inventario, c.precio from estante e
                                 INNER JOIN inventario i on e.id_estante= i.id_estante 
@@ -387,13 +495,12 @@ def getProductos(prodTienda1,prodTienda2,myConnection):
                         }
                 
                 prodTienda2[pepe]['productos'].append(temp)
+    print(prodTienda1)
+    print(prodTienda2)
+
+    return prodTienda1,prodTienda2
         
 
-    print( prodTienda1)
-            
-    print( '--------------------------------------------------------------')
-            
-    print( prodTienda2)
 
 def camaraSend(a,myConnection):
     cur = myConnection.cursor()
