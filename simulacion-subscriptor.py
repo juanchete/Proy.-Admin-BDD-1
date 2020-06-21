@@ -5,6 +5,8 @@ import numpy as np
 import datetime
 import json
 import random
+import psycopg2
+
 
 def main():
     myConnection = psycopg2.connect(host = 'ruby.db.elephantsql.com',
@@ -21,9 +23,9 @@ def main():
 
     client.message_callback_add('plaza/tienda/2/almacen', on_message_almacen)
 
-    client.message_callback_add('plaza/tienda/1/temperatura', on_message_postgre)
+    client.message_callback_add('plaza/tienda/1/temperatura', on_message_temperatura)
 
-    client.message_callback_add('plaza/tienda/2/temperatura', on_message_postgre)
+    client.message_callback_add('plaza/tienda/2/temperatura', on_message_temperatura)
 
     client.connect(host=host) 
 
