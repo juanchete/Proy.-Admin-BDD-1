@@ -48,7 +48,12 @@ capacidadEstanteSnacks = 50
 
 cantHoras = 24
 hora =0
-horaBase = datetime.datetime.now().replace(hour=8, minute=0, second=0)
+conocidos = 0
+desconocidos =0 
+
+myConnection = psycopg2.connect(host = 'ruby.db.elephantsql.com',
+                                user= 'uicdhpnp', password ='Kfp61NZwnYQVCSDf-zl7Jae836R2u0Fn',
+                                dbname= 'uicdhpnp')
 
 def main():
     host = "broker.hivemq.com"
@@ -56,13 +61,12 @@ def main():
     client.qos = 1
     client.connect(host=host)
 
-    myConnection = psycopg2.connect(host = 'ruby.db.elephantsql.com',
-                                user= 'uicdhpnp', password ='Kfp61NZwnYQVCSDf-zl7Jae836R2u0Fn',
-                                dbname= 'uicdhpnp')
+    
 
     cantHoras = 24
     hora =0
     horaBase = datetime.datetime.now().replace(hour=8, minute=0, second=0)
+    horaBase = horaBase - datetime.timedelta(days=1)
     days = 30
 
     nameList = ['Pedro', 'Lana', 'Albert', 'Yangel','Sasuke', 'Elvis']
@@ -72,8 +76,7 @@ def main():
     prodTienda1,prodTienda2 = getProductos(myConnection)
 
     print(len(prodTienda1))
-    conocidos = 0
-    desconocidos =0 
+    
     #Arreglos con data de la BDD
 
 
@@ -133,7 +136,7 @@ def main():
 
         for x in candidataEntrar:
 
-            distribuir(x,capacidadTienda1,colaTienda1,capacidadTienda2,colaTienda2)
+            distribuir(x,capacidadTienda1,colaTienda1,capacidadTienda2,colaTienda2,horaBase)
 
         while(len(capacidadTienda1)!=0 and len(capacidadTienda2)!=0):
 
@@ -142,7 +145,7 @@ def main():
             print(len(colaTienda1))
             print(len(colaTienda2))
 
-            temperatura = np.random.normal(meanTemperatura, stdTemperatura)
+            temperatura = int(np.random.normal(meanTemperatura, stdTemperatura))
 
 
             print('Dia numero ' + str(days) + 'Hora numero '  +str(horaBase.hour) )
@@ -156,7 +159,7 @@ def main():
 
             if(tienda == 1 and len(capacidadTienda1)>0):
                 tienda = 1001
-                persona = entrarTienda(1001,capacidadTienda1,conocidos,desconocidos,horaBase,myConnection)
+                persona = random.choice(capacidadTienda1)
                 print('Entro a la teinda numero 1')
                 x=0
                 while x < len(prodTienda1):
@@ -170,11 +173,12 @@ def main():
                     entraran = random.choice(colaTienda1)
                     colaTienda1.remove(entraran)
                     capacidadTienda1.append(entraran)
+                    entrarTienda(entraran,1001,capacidadTienda1,conocidos,desconocidos,horaBase,myConnection)
                     print('La persona salio de la cola para entrar')
 
             if(tienda == 0 and len(capacidadTienda2)>0):
                 tienda = 1000
-                persona = entrarTienda(1000,capacidadTienda2,conocidos,desconocidos,horaBase,myConnection)
+                persona = random.choice(capacidadTienda2)
                 print('Entro a la teinda numero 2')
                 x=0
                 while x < len(prodTienda2):
@@ -188,6 +192,7 @@ def main():
                     entraran = random.choice(colaTienda2)
                     colaTienda2.remove(entraran)
                     capacidadTienda2.append(entraran)
+                    entrarTienda(entraran,1000,capacidadTienda2,conocidos,desconocidos,horaBase,myConnection)
                     print('La persona salio de la cola para entrar')
             
 
@@ -206,6 +211,12 @@ def main():
     #Variables de la BDD
 
 def checkarTemperatura(temperatura,tienda,hora):
+    alerta = {
+            'temperatura': temperatura,
+            'ID_Sucursal': tienda,
+            'fecha': str(hora)
+        }
+    client.publish('plaza/tienda/'+str(tienda)+'/temperatura',json.dumps(alerta),qos=0)
     if temperatura< 24 or temperatura>31:
 
         mensaje = temperatura - 28
@@ -214,24 +225,20 @@ def checkarTemperatura(temperatura,tienda,hora):
 
         alerta = {
             'rellenar': 'La temperatura esta ' + str(mensaje)+ '°C sobre el deseado, ajustelo en la tienda ' +  str(tienda),
-            'temperatura': temperatura,
-            'ID_Sucursal ': tienda,
-            'fecha': str(hora.date())
         }
 
-        client.publish('plaza/tienda/'+str(tienda)+'/temperatura',json.dumps(alerta),qos=1)
+        client.publish('plaza/tienda/'+str(tienda),json.dumps(alerta),qos=1)
         
-
-
-
-def distribuir (persona,capacidadTienda1,colaTienda1,capacidadTienda2,colaTienda2) :
+def distribuir (persona,capacidadTienda1,colaTienda1,capacidadTienda2,colaTienda2,horaBase) :
 
 
     if(int(np.random.uniform(0,2)) == 1):
 
         if len(capacidadTienda1) < 30:
 
+            
             capacidadTienda1.append(persona)
+            entrarTienda(persona,1001,conocidos,desconocidos,horaBase,myConnection)
         
         else:
 
@@ -242,15 +249,11 @@ def distribuir (persona,capacidadTienda1,colaTienda1,capacidadTienda2,colaTienda
         if len(capacidadTienda2) < 35:
 
             capacidadTienda2.append(persona)
+            entrarTienda(persona,1000,conocidos,desconocidos,horaBase,myConnection)
         
         else:
 
             colaTienda2.append(persona)
-
-
-
-
-
 
 def pagar (persona, orden,tienda,myConnection) :
     
@@ -277,8 +280,7 @@ def pagar (persona, orden,tienda,myConnection) :
         else:
             banco = 'Provincial'
 
-        if persona['afiliado'] == True:
-            aumentarPuntos(persona,myConnection)
+        
 
     
 
@@ -300,42 +302,18 @@ def pagar (persona, orden,tienda,myConnection) :
 
     # }
 
-def entrarTienda (tienda,lista,conocidos,desconocidos,hora,myConnection):
-
-    checkAfiliado = random.choice([a for a in lista if a['afiliado'] ==True])
-    checkNoAfiliado = [a for a in lista if a['afiliado'] ==False]
-
-
-    stop = False
-
-    while stop == False:
-
-        opcion = int(np.random.uniform(0,2))
-
-        if(opcion == 0 and len(checkAfiliado)>0):
-
-            
-        
-        
-            
-            persona = random.choice([a for a in lista if a['afiliado'] ==True])
-            if len(persona) > 0:
-                print('Se escogera una persona conocida')
-                conocidos += 1
-                print(persona)
-                stop = True
-                
-        elif(opcion == 1 and len(checkNoAfiliado)>0):
-            desconocidos += 1
-            persona = [a for a in lista if a['afiliado'] ==False]
-            if int(np.random.uniform(0,1)) == 0 and len(persona)>0:
-                persona = random.choice(persona)
-                print('Se escogera una persona desconocida')
-                print(persona)
-                stop = True
+def entrarTienda (persona,tienda,conocidos,desconocidos,hora,myConnection):
 
     
-    
+
+    if persona['afiliado'] ==True:
+        conocidos+=1
+    else:
+        desconocidos+=1
+
+    print('Entro la persona ')
+    print(persona)
+
     
     payload = {
 
@@ -349,7 +327,7 @@ def entrarTienda (tienda,lista,conocidos,desconocidos,hora,myConnection):
 
     camaraSend(payload,myConnection)
 
-    return persona
+    
 
 def crearPersona ():
     cedula = int(np.random.uniform(1000000,30000000))
@@ -366,44 +344,59 @@ def crearPersona ():
     genteConocida.append(payload)
     return payload 
 
-
 def checkarSiMandoSeñal(produccion,tienda,estante,hora,myConnection):
 
+    print('--------------------------------------ENTRO-----------------------------------------')
     
-    popo = int(produccion[estante]['capacidad'])*0.2
-    if popo >= int(produccion[estante]['cantidad_actual']):
-        alerta = {
-            'rellenar': 'El estante numero ' + str(estante)+ 'de la tienda' +  str(tienda) + 'tiene que ser rellenado',
-            'estante': estante,
+    alerta = {
+            'cantidad': int(produccion[estante]['cantidad_actual']),
+            'capacidad_maxima':int(produccion[estante]['capacidad']),
+            'estante': produccion[estante]['estante'],
             'sucursal': tienda,
-            'fecha': str(hora.date())
-        }
+            'fecha': str(hora)
+    }
 
-        client.publish('plaza/tienda/'+str(tienda)+'/almacen',json.dumps(alerta),qos=1)
-        produccion[estante]['cantidad_actual'] = produccion[estante]['capacidad']
+    print('--------------------------------------DEBIO MANDAR MOTIN-----------------------------------------')
+    print('La tienda es '+str(tienda))
+    if tienda == 1001 :
+        tienda = 1
+    else:
+        tienda = 2
+    client.publish('plaza/tienda/'+str(tienda)+'/almacen',json.dumps(alerta),qos=0)
             
+    popo = int(produccion[estante]['capacidad'])*0.2
+    print(popo)
+    print(produccion[estante]['cantidad_actual'])
+    if popo >= int(produccion[estante]['cantidad_actual']):
+        print('--------------------------------------ENTRO A ACTUALIZACION-----------------------------------------')
         x=0
         while x < len(produccion[estante]['productos']):
             produccion[estante]['productos'][x]['cantidad'] = produccion[estante]['productos'][x]['restock']
             x += 1
+        produccion[estante]['cantidad_actual'] = produccion[estante]['capacidad']
         aux = str(produccion[estante]['estante'])
         query= f"""UPDATE INVENTARIO SET cantidad = promedio_inventario where id_estante = '{aux}';"""
         cur = myConnection.cursor()
         cur.execute(query)
         myConnection.commit()
-            
+        print('--------------------------------------ACTUALIZO MOTIN -----------------------------------------')
+        alerta = {
+            'rellenar': 'El estante numero ' + str(estante)+ 'de la tienda' +  str(tienda) + 'tiene que ser rellenado'
+        }
+        client.publish('plaza/tienda/'+str(tienda),json.dumps(alerta),qos=1)     
+        print('--------------------------------------Mando SENAL  -----------------------------------------')    
 
 def agregarProductos (tienda,produccion, orden, estantes,hora,myConnection):
-    checkarSiMandoSeñal(produccion,tienda,estantes,hora,myConnection)
+    
     if tienda == 1:
         prod = random.choice(produccion[estantes]['productos'])
         indice = produccion[estantes]['productos'].index(prod)
         id_prod = prod['id']
-        cantidad = int(np.random.uniform(0,int(prod['cantidad'])))
+        cantidad = int(np.random.uniform(1,int(prod['cantidad'])))
         aux = int(prod['cantidad']) - cantidad
         if aux >=0: 
             precio = int(prod['precio']) * cantidad
-            print('escogio el producto con el id' + prod['id'] + ' cantidad '+ str(prod['cantidad']) + ' Cada uno cuesta' +str(prod['precio']) + ' el total a pagar es de '+ str(precio))
+            print('escogio el producto con el id' + prod['id'] + ' cantidad '+ str(cantidad) + ' Cada uno cuesta' +str(prod['precio']) + ' el total a pagar es de '+ str(precio))
             produccion[estantes]['productos'][indice]['cantidad'] = int(produccion[estantes]['productos'][indice]['cantidad']) - cantidad
             produccion[estantes]['cantidad_actual'] = int(produccion[estantes]['cantidad_actual']) - cantidad
             producto = {
@@ -418,12 +411,12 @@ def agregarProductos (tienda,produccion, orden, estantes,hora,myConnection):
         prod = random.choice(produccion[estantes]['productos'])
         indice = produccion[estantes]['productos'].index(prod)
         id_prod = prod['id']
-        cantidad = int(np.random.uniform(0,int (prod['cantidad'])))
+        cantidad = int(np.random.uniform(1,int (prod['cantidad'])))
         aux = int(prod['cantidad']) - cantidad
         precio = 0
         if aux >=0:
             precio = int(prod['precio']) * cantidad
-            print('escogio el producto con el id' + prod['id'] + ' cantidad '+ str(prod['cantidad']) + ' Cada uno cuesta' +str(prod['precio']) + ' el total a pagar es de '+ str(precio))
+            print('escogio el producto con el id' + prod['id'] + ' cantidad '+ str(cantidad) + ' Cada uno cuesta' +str(prod['precio']) + ' el total a pagar es de '+ str(precio))
             produccion[estantes]['productos'][indice]['cantidad'] = int(produccion[estantes]['productos'][indice]['cantidad']) - cantidad
             produccion[estantes]['cantidad_actual'] = int(produccion[estantes]['cantidad_actual']) - cantidad
             producto = {
@@ -432,6 +425,7 @@ def agregarProductos (tienda,produccion, orden, estantes,hora,myConnection):
                 'precio' : precio
             }
             orden.append(producto)
+    checkarSiMandoSeñal(produccion,tienda,estantes,hora,myConnection)
             
     
 
@@ -456,7 +450,6 @@ def getClientes(lista,myConnection ):
     
         lista.append(producto)
     
-
 def getProductos(myConnection):
 
     prodTienda1 = []
@@ -494,7 +487,7 @@ def getProductos(myConnection):
                         'restock' : row["promedio_inventario"]
                         }],
                 'cantidad_actual' : row["cantidad"],
-                'capacidad' : row["max_capacidad"]
+                'capacidad' : row["cantidad"]
                 }
                 
                 prodTienda1.append(temp)
@@ -513,6 +506,7 @@ def getProductos(myConnection):
                 
                 prodTienda1[pepe]['productos'].append(temp)
                 prodTienda1[pepe]['cantidad_actual'] : momento
+                prodTienda1[pepe]['capacidad'] : momento
                 
         else:
             
@@ -530,7 +524,7 @@ def getProductos(myConnection):
                         'restock' : row["promedio_inventario"]
                         }],
                 'cantidad_actual' : row["cantidad"],
-                'capacidad' : row["max_capacidad"]
+                'capacidad' : row["cantidad"]
                 }
                 
                 prodTienda2.append(temp)
@@ -550,20 +544,12 @@ def getProductos(myConnection):
                 prodTienda2[pepe]['productos'].append(temp)
 
                 prodTienda2[pepe]['cantidad_actual'] : momento
+                prodTienda2[pepe]['capacidad'] : momento
 
     print(prodTienda1)
     print(prodTienda2)
 
     return prodTienda1,prodTienda2
-
-def aumentarPuntos(persona,myConnection):
-
-    aux = str(persona['id'])
-    query= f"""UPDATE afiliado SET puntos = puntos*1.1 where id_cliente = '{aux}';"""
-    cur = myConnection.cursor()
-    cur.execute(query)
-    myConnection.commit()
-
 
 def ejecutarPago(lista, cantidades, banco, cliente, sucursal,myConnection ):
     

@@ -7,11 +7,12 @@ import json
 import random
 import psycopg2
 
-
-def main():
-    myConnection = psycopg2.connect(host = 'ruby.db.elephantsql.com',
+myConnection = psycopg2.connect(host = 'ruby.db.elephantsql.com',
                                 user= 'uicdhpnp', password ='Kfp61NZwnYQVCSDf-zl7Jae836R2u0Fn',
                                 dbname= 'uicdhpnp')
+
+def main():
+    
     
     host = "broker.hivemq.com"
 
@@ -19,11 +20,15 @@ def main():
 
     client.on_connect = on_connect
 
-    client.message_callback_add('plaza/tienda/1/almacen', on_message_almacen)
+    client.message_callback_add('plaza/tienda/1', on_message)
+
+    client.message_callback_add('plaza/tienda/2', on_message)
+
+    client.message_callback_add('plaza/tienda/1/almacen', on_message_almacen) 
 
     client.message_callback_add('plaza/tienda/2/almacen', on_message_almacen)
 
-    client.message_callback_add('plaza/tienda/1/temperatura', on_message_temperatura)
+    client.message_callback_add('plaza/tienda/1/temperatura', on_message_temperatura) 
 
     client.message_callback_add('plaza/tienda/2/temperatura', on_message_temperatura)
 
@@ -54,8 +59,8 @@ def on_message_almacen(client, userdata, message):
 
 def doQueryAlmacen(a):
     cur = myConnection.cursor()
-    cur.execute("INSERT INTO rotacion (fecha, estante, sucursal) VALUES (%s, %s, %s);",
-                (a["fecha"],a["estante"],a["sucursal"]))
+    cur.execute("INSERT INTO rotacion VALUES (%s, %s, %s,%s);",
+                (a["fecha"],a["estante"],a["sucursal"],a["cantidad"]))
     myConnection.commit()
 
 def on_message_temperatura(client, userdata, message):   
@@ -69,8 +74,8 @@ def on_message_temperatura(client, userdata, message):
 
 def doQueryTemperatura(a):
     cur = myConnection.cursor()
-    cur.execute("INSERT INTO historico_temperatura  (fecha, estante, sucursal) VALUES (%s, %s, %s);",
-                (a["fecha"],a["temperatura "],a["ID_Sucursal "]))
+    cur.execute("INSERT INTO historico_temperatura  VALUES (%s, %s, %s);",
+                (a["fecha"],a["temperatura"],a["ID_Sucursal"]))
     myConnection.commit()
 
 if __name__ == "__main__":
